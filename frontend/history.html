@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史记录 - 墨境</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .history-item {
+            background: rgba(30, 30, 50, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .history-item:hover {
+            transform: translateX(5px);
+            border-color: #667eea;
+        }
+        .history-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .history-meta {
+            display: flex;
+            gap: 20px;
+            color: #888;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+        .history-summary {
+            color: #ccc;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        .back-btn {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: rgba(102, 126, 234, 0.3);
+            border: 1px solid #667eea;
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .back-btn:hover {
+            background: rgba(102, 126, 234, 0.5);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="back-btn" onclick="window.location.href='index.html'">← 返回游戏</button>
+        <header>
+            <h1>📖 历史记录</h1>
+            <p>你的冒险旅程</p>
+        </header>
+        
+        <div id="history-list" class="history-list">
+            <div class="empty-state">加载中...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        async function loadHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/story/history/all`);
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+                const data = await response.json();
+                displayHistory(data.stories);
+            } catch (error) {
+                console.error('加载历史失败:', error);
+                document.getElementById('history-list').innerHTML = 
+                    '<div class="empty-state">暂无故事记录，开始你的第一个冒险吧！</div>';
+            }
+        }
+        
+        function displayHistory(stories) {
+            const container = document.getElementById('history-list');
+            if (!stories || stories.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无故事记录，开始你的第一个冒险吧！</div>';
+                return;
+            }
+            
+            container.innerHTML = stories.map(story => `
+                <div class="history-item" onclick="viewStory('${story.story_id}')">
+                    <div class="history-title">${escapeHtml(story.title || '未命名故事')}</div>
+                    <div class="history-meta">
+                        <span>🌍 ${story.world}</span>
+                        <span>📅 ${new Date(story.created_at).toLocaleString()}</span>
+                        <span>📝 ${story.turn_count || 0} 轮</span>
+                    </div>
+                    <div class="history-summary">${escapeHtml(story.summary || '暂无摘要')}</div>
+                </div>
+            `).join('');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function viewStory(storyId) {
+            window.location.href = `story_detail.html?id=${storyId}`;
+        }
+        
+        loadHistory();
+    </script>
+</body>
+</html>

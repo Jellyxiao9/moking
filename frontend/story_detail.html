@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>故事详情 - 墨境</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .turn-item {
+            background: rgba(30, 30, 50, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 3px solid #667eea;
+        }
+        .turn-number {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .user-choice {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            color: #aaccff;
+        }
+        .narrative {
+            line-height: 1.8;
+            margin-top: 10px;
+        }
+        .back-btn {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: rgba(102, 126, 234, 0.3);
+            border: 1px solid #667eea;
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .continue-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="back-btn" onclick="window.location.href='history.html'">← 返回历史</button>
+        <header>
+            <h1 id="story-title">加载中...</h1>
+            <p id="story-meta"></p>
+        </header>
+        
+        <div id="turns-container"></div>
+        
+        <div style="text-align: center;">
+            <button id="continue-btn" class="continue-btn" style="display: none;">继续这个故事</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let currentStoryId = null;
+        
+        async function loadStoryDetail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const storyId = urlParams.get('id');
+            if (!storyId) {
+                alert('故事ID不存在');
+                window.location.href = 'history.html';
+                return;
+            }
+            
+            currentStoryId = storyId;
+            
+            try {
+                const response = await fetch(`${API_BASE}/story/${storyId}/history`);
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+                const data = await response.json();
+                displayStory(data);
+            } catch (error) {
+                console.error('加载故事详情失败:', error);
+                document.getElementById('turns-container').innerHTML = 
+                    '<div class="empty-state">加载失败</div>';
+            }
+        }
+        
+        function displayStory(data) {
+            document.getElementById('story-title').textContent = data.title || '故事详情';
+            document.getElementById('story-meta').textContent = 
+                `🌍 ${data.world} | 📅 ${new Date(data.created_at).toLocaleString()} | 📝 ${data.turns?.length || 0} 轮`;
+            
+            const container = document.getElementById('turns-container');
+            if (!data.turns || data.turns.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无记录</div>';
+                return;
+            }
+            
+            container.innerHTML = data.turns.map(turn => `
+                <div class="turn-item">
+                    <div class="turn-number">第 ${turn.turn_number} 轮</div>
+                    ${turn.user_choice ? `<div class="user-choice">✨ 你的选择: ${escapeHtml(turn.user_choice)}</div>` : ''}
+                    <div class="narrative">${escapeHtml(turn.narrative).replace(/\n/g, '<br>')}</div>
+                </div>
+            `).join('');
+            
+            // 显示"继续故事"按钮
+            const continueBtn = document.getElementById('continue-btn');
+            if (data.turns.length > 0) {
+                continueBtn.style.display = 'block';
+                continueBtn.onclick = () => {
+                    window.location.href = `index.html?continue=${currentStoryId}`;
+                };
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        loadStoryDetail();
+    </script>
+</body>
+</html>

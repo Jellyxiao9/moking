@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>墨境 · 互动叙事引擎</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>墨境 Storycraft</h1>
+            <p>AI 驱动的动态互动小说引擎</p>
+        </header>
+
+        <!-- 开局界面 -->
+        <div id="setup-screen" class="screen active">
+            <div class="card">
+                <h2>开始你的故事</h2>
+                
+                <div class="form-group">
+                    <label>选择世界观：</label>
+                    <select id="world-select">
+                        <option value="noir">黑色电影 - 1952年，永远下雨的罪恶都市</option>
+                        <option value="cyberpunk">赛博朋克 - 2077年，霓虹灯下的高科技低生活</option>
+                        <option value="fantasy">奇幻 - 剑与魔法的中世纪世界</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>描述你的开场：</label>
+                    <textarea id="opening-input" rows="3" placeholder="例如：我是一个刚从警校毕业的年轻侦探..."></textarea>
+                </div>
+
+                <button id="start-btn" class="btn-primary">开始冒险</button>
+            </div>
+        </div>
+
+        <!-- 游戏界面 -->
+        <div id="game-screen" class="screen">
+            <div class="game-container">
+                <div class="story-card">
+                    <div id="story-content" class="story-content">
+                        <p class="placeholder">等待故事开始...</p>
+                    </div>
+                    
+                    <div id="choices-container" class="choices"></div>
+
+                    <div class="game-controls">
+                        <button id="new-game-btn" class="btn-secondary">新游戏</button>
+                        <span id="turn-indicator" class="turn-indicator">第 1 轮</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="loading-spinner"></div>
+            <p>AI 正在编织故事...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

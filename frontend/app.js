@@ -22,9 +22,24 @@ function hideLoading() {
     loadingOverlay.classList.add('hidden');
 }
 
-// 显示剧情文本
+// 显示剧情文本（打字机效果）
 async function displayStory(text, container) {
-    container.innerHTML = text.replace(/\n/g, '<br>');
+    container.innerHTML = '';  // 清空容器
+    const chars = text.split('');  // 把文字拆成单个字符
+
+    for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        if (char === '\n') {
+            container.innerHTML += '<br>';
+        } else {
+            container.innerHTML += char;
+        }
+        // 滚动到底部
+        storyContent.scrollTop = storyContent.scrollHeight;
+        // 控制打字速度：标点符号稍慢
+        const delay = ['.', '。', '!', '！', '?', '？', '，', ','].includes(char) ? 80 : 30;
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
 }
 
 // 显示选项按钮
@@ -43,14 +58,14 @@ function displayChoices(choices) {
 async function startStory() {
     const world = document.getElementById('world-select').value;
     const opening = document.getElementById('opening-input').value.trim();
-    
+
     if (!opening) {
         alert('请描述你的开场场景');
         return;
     }
-    
+
     showLoading();
-    
+
     try {
         const response = await fetch(`${API_BASE}/story/start`, {
             method: 'POST',
@@ -62,38 +77,40 @@ async function startStory() {
                 opening: opening
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
         currentStoryId = data.story_id;
         currentTurn = 1;
-        
+
         // 切换到游戏界面
         setupScreen.classList.remove('active');
         gameScreen.classList.add('active');
-        
-        // 显示剧情
+
+        // 先关闭加载提示
+        hideLoading();
+
+        // 再显示剧情（打字机效果）
         await displayStory(data.content, storyContent);
         displayChoices(data.choices);
         turnIndicator.textContent = `第 ${currentTurn} 轮`;
-        
+
     } catch (error) {
         console.error('开始故事失败:', error);
-        alert('开始故事失败，请确保后端服务已启动');
-    } finally {
         hideLoading();
+        alert('开始故事失败，请确保后端服务已启动');
     }
 }
 
 // 做出选择
 async function makeChoice(choice) {
     if (!currentStoryId) return;
-    
+
     showLoading();
-    
+
     try {
         const response = await fetch(`${API_BASE}/story/continue`, {
             method: 'POST',
@@ -105,24 +122,26 @@ async function makeChoice(choice) {
                 user_choice: choice
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
         currentTurn = data.turn_number;
-        
-        // 显示新剧情
+
+        // 先关闭加载提示
+        hideLoading();
+
+        // 再显示新剧情（打字机效果）
         await displayStory(data.content, storyContent);
         displayChoices(data.choices);
         turnIndicator.textContent = `第 ${currentTurn} 轮`;
-        
+
     } catch (error) {
         console.error('继续故事失败:', error);
-        alert('继续故事失败，请重试');
-    } finally {
         hideLoading();
+        alert('继续故事失败，请重试');
     }
 }
 

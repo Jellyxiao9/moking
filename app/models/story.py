@@ -11,6 +11,9 @@ class WorldType(str, enum.Enum):
     cyberpunk = "cyberpunk"
     fantasy = "fantasy"
     noir = "noir"
+    xianxia = "xianxia"
+    strategy = "strategy"
+    urban = "urban"
 
 
 class Story(Base):

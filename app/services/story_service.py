@@ -48,15 +48,31 @@ class StoryService:
         # 2. 提取选项
         choices = extract_choices(story_content)
 
-        # 3. 创建故事记录
+        # 3. 自动生成标题（如果未提供）
         if not title:
-            title = f"{world} 冒险 - {opening[:30]}"
+            try:
+                title_prompt = f"根据以下故事开场，生成一个简短的标题（10字以内，不要加引号，不要加标点）：\n{opening}"
+                response = self.narrator.client.chat.completions.create(
+                    model=self.narrator.model,
+                    messages=[{"role": "user", "content": title_prompt}],
+                    max_tokens=20,
+                    temperature=0.7
+                )
+                title = response.choices[0].message.content.strip()
+                # 清理标题：去掉引号和多余符号
+                title = title.strip('"').strip("'").strip()
+                if len(title) > 20 or not title:
+                    title = f"{world} 冒险"
+            except:
+                title = f"{world} 冒险"
+
+        # 4. 创建故事记录
         story = self.story_repo.create(
             title=title,
             world=world
         )
 
-        # 4. 保存第一轮对话
+        # 5. 保存第一轮对话
         self.turn_repo.create(
             story_id=story.id,
             turn_number=1,

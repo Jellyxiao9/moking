@@ -14,6 +14,8 @@ class WorldType(str, enum.Enum):
     xianxia = "xianxia"
     strategy = "strategy"
     urban = "urban"
+    cthulhu = "cthulhu"
+    wasteland = "wasteland"
 
 
 class Story(Base):

@@ -16,6 +16,8 @@ async def list_worlds():
         {"id": "fantasy", "name": "奇幻", "description": "剑与魔法的中世纪世界"},
         {"id": "xianxia", "name": "东方玄幻", "description": "九天玄界，灵气复苏，修仙问道"},
         {"id": "strategy", "name": "古风权谋", "description": "天盛王朝，朝堂博弈，人心难测"},
-        {"id": "urban", "name": "都市传说", "description": "雾都怪谈，午夜禁忌，规则求生"}
+        {"id": "urban", "name": "都市传说", "description": "雾都怪谈，午夜禁忌，规则求生"},
+        {"id": "cthulhu", "name": "克苏鲁神话", "description": "1920年代，不可名状的古老恐惧"},
+        {"id": "wasteland", "name": "废土生存", "description": "2087年，核战后的末世废土"}
     ]
     return {"worlds": worlds}

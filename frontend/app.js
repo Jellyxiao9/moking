@@ -12,6 +12,7 @@ const storyContent = document.getElementById('story-content');
 const choicesContainer = document.getElementById('choices-container');
 const turnIndicator = document.getElementById('turn-indicator');
 const loadingOverlay = document.getElementById('loading-overlay');
+const templateSelect = document.getElementById('template-select');
 
 // 显示加载状态
 function showLoading() {
@@ -24,8 +25,8 @@ function hideLoading() {
 
 // 显示剧情文本（打字机效果）
 async function displayStory(text, container) {
-    container.innerHTML = '';  // 清空容器
-    const chars = text.split('');  // 把文字拆成单个字符
+    container.innerHTML = '';
+    const chars = text.split('');
 
     for (let i = 0; i < chars.length; i++) {
         const char = chars[i];
@@ -34,9 +35,7 @@ async function displayStory(text, container) {
         } else {
             container.innerHTML += char;
         }
-        // 滚动到底部
         storyContent.scrollTop = storyContent.scrollHeight;
-        // 控制打字速度：标点符号稍慢
         const delay = ['.', '。', '!', '！', '?', '？', '，', ','].includes(char) ? 80 : 30;
         await new Promise(resolve => setTimeout(resolve, delay));
     }
@@ -54,6 +53,29 @@ function displayChoices(choices) {
     });
 }
 
+// 加载模板
+async function loadTemplates(world) {
+    if (!templateSelect) return;
+    templateSelect.innerHTML = '<option value="">自定义开场</option>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/world/${world}/templates`);
+        const data = await response.json();
+        
+        if (data.templates && data.templates.length > 0) {
+            data.templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.opening;
+                option.textContent = `${template.name} - ${template.description}`;
+                templateSelect.appendChild(option);
+            });
+            console.log(`已加载 ${data.templates.length} 个模板`);
+        }
+    } catch (error) {
+        console.log('模板加载失败:', error);
+    }
+}
+
 // 开始新故事
 async function startStory() {
     const world = document.getElementById('world-select').value;
@@ -69,13 +91,8 @@ async function startStory() {
     try {
         const response = await fetch(`${API_BASE}/story/start`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                world: world,
-                opening: opening
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ world: world, opening: opening })
         });
 
         if (!response.ok) {
@@ -86,14 +103,10 @@ async function startStory() {
         currentStoryId = data.story_id;
         currentTurn = 1;
 
-        // 切换到游戏界面
         setupScreen.classList.remove('active');
         gameScreen.classList.add('active');
 
-        // 先关闭加载提示
         hideLoading();
-
-        // 再显示剧情（打字机效果）
         await displayStory(data.content, storyContent);
         displayChoices(data.choices);
         turnIndicator.textContent = `第 ${currentTurn} 轮`;
@@ -114,13 +127,8 @@ async function makeChoice(choice) {
     try {
         const response = await fetch(`${API_BASE}/story/continue`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                story_id: currentStoryId,
-                user_choice: choice
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ story_id: currentStoryId, user_choice: choice })
         });
 
         if (!response.ok) {
@@ -130,10 +138,7 @@ async function makeChoice(choice) {
         const data = await response.json();
         currentTurn = data.turn_number;
 
-        // 先关闭加载提示
         hideLoading();
-
-        // 再显示新剧情（打字机效果）
         await displayStory(data.content, storyContent);
         displayChoices(data.choices);
         turnIndicator.textContent = `第 ${currentTurn} 轮`;
@@ -159,5 +164,26 @@ function resetGame() {
 // 绑定事件
 document.getElementById('start-btn').addEventListener('click', startStory);
 document.getElementById('new-game-btn').addEventListener('click', resetGame);
+
+// 监听世界观变化
+const worldSelect = document.getElementById('world-select');
+if (worldSelect) {
+    worldSelect.addEventListener('change', (e) => {
+        loadTemplates(e.target.value);
+    });
+}
+
+// 监听模板选择变化
+if (templateSelect) {
+    templateSelect.addEventListener('change', (e) => {
+        if (e.target.value) {
+            document.getElementById('opening-input').value = e.target.value;
+        }
+    });
+}
+
+// 页面加载时加载默认模板
+const initialWorld = document.getElementById('world-select').value;
+loadTemplates(initialWorld);
 
 console.log('前端已加载，API地址:', API_BASE);

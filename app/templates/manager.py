@@ -1,0 +1,69 @@
+"""
+模板管理器 - 统一管理所有世界观的角色模板
+高内聚：模板相关的所有逻辑都在这里
+低耦合：其他模块只通过这个管理器访问模板
+"""
+
+import importlib
+from typing import List, Dict, Optional
+from app.templates import TemplateProvider
+
+
+class TemplateManager:
+    """模板管理器"""
+    
+    # 世界观与模板模块的映射
+    _WORLD_MODULES = {
+        "noir": "app.templates.noir_templates",
+        "cyberpunk": "app.templates.cyberpunk_templates",
+        "fantasy": "app.templates.fantasy_templates",
+        "xianxia": "app.templates.xianxia_templates",
+        "strategy": "app.templates.strategy_templates",
+        "urban": "app.templates.urban_templates",
+        "cthulhu": "app.templates.cthulhu_templates",
+        "wasteland": "app.templates.wasteland_templates",
+    }
+    
+    def __init__(self):
+        self._cache = {}  # 缓存已加载的模板
+    
+    def _load_templates(self, world_id: str) -> List[Dict]:
+        """懒加载指定世界观的模板"""
+        if world_id in self._cache:
+            return self._cache[world_id]
+        
+        module_name = self._WORLD_MODULES.get(world_id)
+        if not module_name:
+            return []
+        
+        try:
+            module = importlib.import_module(module_name)
+            templates = module.get_templates()
+            self._cache[world_id] = templates
+            return templates
+        except ImportError:
+            # 模板文件不存在，返回空列表
+            return []
+    
+    def get_templates(self, world_id: str) -> List[Dict]:
+        """获取指定世界观的模板列表"""
+        return self._load_templates(world_id)
+    
+    def get_template_by_id(self, world_id: str, template_id: str) -> Optional[Dict]:
+        """根据ID获取模板"""
+        templates = self._load_templates(world_id)
+        for t in templates:
+            if t.get("id") == template_id:
+                return t
+        return None
+    
+    def get_template_by_index(self, world_id: str, index: int) -> Optional[Dict]:
+        """根据索引获取模板（用于随机）"""
+        templates = self._load_templates(world_id)
+        if 0 <= index < len(templates):
+            return templates[index]
+        return None
+
+
+# 全局单例
+template_manager = TemplateManager()

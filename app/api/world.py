@@ -3,6 +3,7 @@
 """
 
 from fastapi import APIRouter
+from app.templates.manager import template_manager
 
 router = APIRouter(prefix="/world", tags=["world"])
 
@@ -21,3 +22,28 @@ async def list_worlds():
         {"id": "wasteland", "name": "废土生存", "description": "2087年，核战后的末世废土"}
     ]
     return {"worlds": worlds}
+
+
+@router.get("/{world_id}/templates")
+async def get_world_templates(world_id: str):
+    """获取指定世界观的角色模板"""
+    templates = template_manager.get_templates(world_id)
+    return {
+        "world": world_id,
+        "templates": templates
+    }
+
+
+@router.get("/{world_id}/templates/random")
+async def get_random_template(world_id: str):
+    """随机获取一个角色模板"""
+    import random
+    templates = template_manager.get_templates(world_id)
+    if not templates:
+        return {"world": world_id, "template": None}
+    
+    template = random.choice(templates)
+    return {
+        "world": world_id,
+        "template": template
+    }

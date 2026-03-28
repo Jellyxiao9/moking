@@ -356,4 +356,119 @@ if (worldSelect) {
 // 页面加载时加载标签
 loadTags();
 
+// AI 生成新模板
+async function generateTemplateByAI() {
+    if (selectedTags.length === 0) {
+        alert('请先选择至少一个标签');
+        return;
+    }
+    
+    const world = document.getElementById('world-select').value;
+    
+    // 显示加载状态
+    const generateBtn = document.getElementById('ai-generate-btn');
+    if (!generateBtn) return;
+    
+    const originalText = generateBtn.textContent;
+    generateBtn.textContent = 'AI 生成中...';
+    generateBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`${API_BASE}/world/generate-template`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                world_id: world,
+                tags: selectedTags
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const template = await response.json();
+        
+        // 显示生成的模板
+        displayAIGeneratedTemplate(template);
+        
+    } catch (error) {
+        console.error('AI 生成失败:', error);
+        alert('AI 生成失败，请重试');
+    } finally {
+        generateBtn.textContent = originalText;
+        generateBtn.disabled = false;
+    }
+}
+
+// 显示 AI 生成的模板
+function displayAIGeneratedTemplate(template) {
+    // 在推荐区域显示 AI 生成的模板
+    const container = document.getElementById('recommendations-container');
+    const listContainer = document.getElementById('recommendations-list');
+    
+    if (!container || !listContainer) return;
+    
+    container.style.display = 'block';
+    
+    // 创建 AI 生成模板的卡片
+    const item = document.createElement('div');
+    item.className = 'recommendation-item';
+    item.style.borderLeftColor = '#ffaa44';
+    item.style.background = 'rgba(255, 170, 68, 0.1)';
+    item.onclick = () => {
+        const openingInput = document.getElementById('opening-input');
+        if (openingInput) {
+            openingInput.value = template.opening;
+        }
+        // 可选：在模板下拉框中添加
+        const templateSelect = document.getElementById('template-select');
+        if (templateSelect) {
+            const option = document.createElement('option');
+            option.value = template.opening;
+            option.textContent = `${template.name} - ${template.description} (AI生成)`;
+            templateSelect.appendChild(option);
+            templateSelect.value = template.opening;
+        }
+    };
+    
+    item.innerHTML = `
+        <div class="recommendation-name">
+            🤖 ${template.name}
+            <span class="recommendation-score">AI 生成</span>
+        </div>
+        <div class="recommendation-desc">${template.description}</div>
+        <div class="recommendation-tags">标签: ${template.tags.join(' · ')}</div>
+    `;
+    
+    // 插入到推荐列表最前面
+    if (listContainer.firstChild) {
+        listContainer.insertBefore(item, listContainer.firstChild);
+    } else {
+        listContainer.appendChild(item);
+    }
+    
+    // 添加提示
+    const tip = document.createElement('div');
+    tip.className = 'recommendation-tip';
+    tip.style.fontSize = '12px';
+    tip.style.color = '#ffaa44';
+    tip.style.marginBottom = '10px';
+    tip.innerHTML = '✨ AI 根据你选择的标签生成了新模板，点击使用';
+    
+    if (listContainer.firstChild && listContainer.firstChild !== item) {
+        listContainer.insertBefore(tip, listContainer.firstChild);
+    } else {
+        listContainer.insertBefore(tip, item);
+    }
+}
+
+// 绑定 AI 生成按钮（等待 DOM 加载完成）
+document.addEventListener('DOMContentLoaded', () => {
+    const aiGenerateBtn = document.getElementById('ai-generate-btn');
+    if (aiGenerateBtn) {
+        aiGenerateBtn.addEventListener('click', generateTemplateByAI);
+    }
+});
+
 console.log('前端已加载，API地址:', API_BASE);

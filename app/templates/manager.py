@@ -5,6 +5,7 @@
 """
 
 import importlib
+import time
 from typing import List, Dict, Optional
 from app.templates import TemplateProvider
 
@@ -119,5 +120,81 @@ class TemplateManager:
         scores.sort(key=lambda x: x["score"], reverse=True)
         return scores[:limit]
 
+    async def generate_template_by_ai(self, world_id: str, tags: List[str]) -> Dict:
+        """使用 AI 根据标签生成新模板"""
+        from app.engine.narrator import Narrator
+        
+        narrator = Narrator()
+        
+        # 构建生成提示词
+        prompt = f"""请根据以下信息，生成一个角色模板：
+
+世界观：{world_id}
+标签：{', '.join(tags)}
+
+请生成一个符合以上标签的角色模板，格式如下：
+- 角色名称（2-6个字）
+- 简短描述（15字以内）
+- 开场描述（50-100字，第一人称）
+
+要求：
+1. 角色名称要符合世界观和标签
+2. 开场描述要用第一人称"我"
+3. 不要加引号或额外标记
+4. 直接返回模板内容
+
+请按以下格式返回：
+名称：xxx
+描述：xxx
+开场：xxx
+"""
+        
+        try:
+            response = narrator.client.chat.completions.create(
+                model=narrator.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=200,
+                temperature=0.8
+            )
+            
+            content = response.choices[0].message.content
+            
+            # 解析 AI 返回的内容
+            template = self._parse_ai_template(content, world_id, tags)
+            return template
+            
+        except Exception as e:
+            print(f"AI 生成模板失败: {e}")
+            return None
+    
+    def _parse_ai_template(self, content: str, world_id: str, tags: List[str]) -> Dict:
+        """解析 AI 返回的模板内容"""
+        lines = content.strip().split('\n')
+        template = {
+            "id": f"ai_{world_id}_{int(time.time())}",
+            "name": "",
+            "description": "",
+            "opening": "",
+            "tags": tags,
+            "is_ai_generated": True
+        }
+        
+        for line in lines:
+            if line.startswith("名称："):
+                template["name"] = line.replace("名称：", "").strip()
+            elif line.startswith("描述："):
+                template["description"] = line.replace("描述：", "").strip()
+            elif line.startswith("开场："):
+                template["opening"] = line.replace("开场：", "").strip()
+        
+        # 如果解析失败，使用默认值
+        if not template["name"]:
+            template["name"] = f"{tags[0]}者" if tags else "冒险者"
+        if not template["description"]:
+            template["description"] = f"擅长{', '.join(tags)}的角色"
+        if not template["opening"]:
+            template["opening"] = f"我是一个{tags[0] if tags else '冒险'}者，踏上了未知的旅程。"
+        
+        return template
 # 全局单例
 template_manager = TemplateManager()

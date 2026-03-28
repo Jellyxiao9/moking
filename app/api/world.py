@@ -4,6 +4,7 @@
 
 from fastapi import APIRouter
 from app.templates.manager import template_manager
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/world", tags=["world"])
 
@@ -78,3 +79,19 @@ async def recommend_templates(request: dict):
         "preferred_tags": preferred_tags,
         "recommendations": recommendations
     }
+
+@router.post("/generate-template")
+async def generate_template(request: dict):
+    """AI 动态生成角色模板"""
+    world_id = request.get("world_id")
+    tags = request.get("tags", [])
+    
+    if not world_id or not tags:
+        raise HTTPException(status_code=400, detail="需要提供 world_id 和 tags")
+    
+    template = await template_manager.generate_template_by_ai(world_id, tags)
+    
+    if not template:
+        raise HTTPException(status_code=500, detail="AI 生成模板失败")
+    
+    return template

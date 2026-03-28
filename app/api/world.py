@@ -47,3 +47,34 @@ async def get_random_template(world_id: str):
         "world": world_id,
         "template": template
     }
+
+@router.get("/tags")
+async def get_all_tags():
+    """获取所有可用标签"""
+    tags = template_manager.get_all_tags()
+    return {"tags": tags}
+
+
+@router.get("/{world_id}/templates/by-tag/{tag}")
+async def get_templates_by_tag(world_id: str, tag: str):
+    """根据标签获取指定世界观的模板"""
+    templates = template_manager.get_templates_by_tag(tag, world_id)
+    return {
+        "world": world_id,
+        "tag": tag,
+        "templates": [t["template"] for t in templates]
+    }
+
+
+@router.post("/recommend")
+async def recommend_templates(request: dict):
+    """根据偏好标签推荐模板"""
+    preferred_tags = request.get("preferred_tags", [])
+    world_id = request.get("world_id")
+    limit = request.get("limit", 3)
+    
+    recommendations = template_manager.recommend_by_tags(preferred_tags, world_id, limit)
+    return {
+        "preferred_tags": preferred_tags,
+        "recommendations": recommendations
+    }

@@ -64,6 +64,60 @@ class TemplateManager:
             return templates[index]
         return None
 
+    def get_all_tags(self) -> List[str]:
+        """获取所有标签（去重）"""
+        all_tags = set()
+        for world_id in self._WORLD_MODULES.keys():
+            templates = self.get_templates(world_id)
+            for t in templates:
+                tags = t.get("tags", [])
+                all_tags.update(tags)
+        return sorted(list(all_tags))
+    
+    def get_templates_by_tag(self, tag: str, world_id: str = None) -> List[Dict]:
+        """根据标签获取模板
+        - 如果指定 world_id，只返回该世界观的模板
+        - 如果不指定，返回所有世界观的模板
+        """
+        results = []
+        worlds = [world_id] if world_id else self._WORLD_MODULES.keys()
+        
+        for w in worlds:
+            templates = self.get_templates(w)
+            for t in templates:
+                if tag in t.get("tags", []):
+                    results.append({
+                        "world": w,
+                        "template": t
+                    })
+        return results
+    
+    def recommend_by_tags(self, preferred_tags: List[str], world_id: str = None, limit: int = 3) -> List[Dict]:
+        """根据偏好标签推荐模板
+        - preferred_tags: 用户偏好的标签列表
+        - world_id: 可选，限定世界观
+        - limit: 返回数量
+        """
+        # 计算每个模板的匹配分数
+        scores = []
+        worlds = [world_id] if world_id else self._WORLD_MODULES.keys()
+        
+        for w in worlds:
+            templates = self.get_templates(w)
+            for t in templates:
+                tags = t.get("tags", [])
+                score = sum(1 for tag in preferred_tags if tag in tags)
+                if score > 0:
+                    scores.append({
+                        "world": w,
+                        "template": t,
+                        "score": score,
+                        "matched_tags": [tag for tag in preferred_tags if tag in tags]
+                    })
+        
+        # 按分数排序，取前 limit 个
+        scores.sort(key=lambda x: x["score"], reverse=True)
+        return scores[:limit]
 
 # 全局单例
 template_manager = TemplateManager()

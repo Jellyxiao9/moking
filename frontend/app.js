@@ -5,6 +5,10 @@ const API_BASE = 'http://localhost:8000';
 let currentStoryId = null;
 let currentTurn = 1;
 
+// 标签推荐相关变量
+let selectedTags = [];
+let currentWorldForTags = 'noir';
+
 // DOM 元素
 const setupScreen = document.getElementById('setup-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -169,6 +173,18 @@ document.getElementById('new-game-btn').addEventListener('click', resetGame);
 const worldSelect = document.getElementById('world-select');
 if (worldSelect) {
     worldSelect.addEventListener('change', (e) => {
+        // 清空选中的标签
+        selectedTags = [];
+        // 清空标签高亮
+        document.querySelectorAll('.tag').forEach(tag => {
+            tag.classList.remove('selected');
+        });
+        // 隐藏推荐区域
+        const recContainer = document.getElementById('recommendations-container');
+        if (recContainer) recContainer.style.display = 'none';
+        // 重新加载标签
+        loadTags();
+        // 重新加载模板
         loadTemplates(e.target.value);
     });
 }
@@ -185,5 +201,159 @@ if (templateSelect) {
 // 页面加载时加载默认模板
 const initialWorld = document.getElementById('world-select').value;
 loadTemplates(initialWorld);
+
+// 加载标签（只加载当前世界观的标签）
+async function loadTags() {
+    const tagsContainer = document.getElementById('tags-container');
+    if (!tagsContainer) return;
+    
+    const world = document.getElementById('world-select').value;
+    
+    tagsContainer.innerHTML = '<span class="tag-loading">加载标签中...</span>';
+    
+    try {
+        // 获取当前世界观的所有模板
+        const response = await fetch(`${API_BASE}/world/${world}/templates`);
+        const data = await response.json();
+        
+        // 收集所有标签
+        const allTags = new Set();
+        data.templates.forEach(template => {
+            if (template.tags) {
+                template.tags.forEach(tag => allTags.add(tag));
+            }
+        });
+        
+        // 转换为数组并排序
+        const tags = Array.from(allTags).sort();
+        
+        tagsContainer.innerHTML = '';
+        if (tags.length === 0) {
+            tagsContainer.innerHTML = '<span class="tag-loading">暂无标签</span>';
+            return;
+        }
+        
+        tags.forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag';
+            tagElement.textContent = tag;
+            tagElement.onclick = () => toggleTag(tag, tagElement);
+            tagsContainer.appendChild(tagElement);
+        });
+        
+    } catch (error) {
+        console.error('加载标签失败:', error);
+        tagsContainer.innerHTML = '<span class="tag-loading">加载标签失败</span>';
+    }
+}
+
+// 切换标签选中状态
+async function toggleTag(tag, element) {
+    if (selectedTags.includes(tag)) {
+        // 取消选中
+        selectedTags = selectedTags.filter(t => t !== tag);
+        element.classList.remove('selected');
+    } else {
+        // 选中
+        selectedTags.push(tag);
+        element.classList.add('selected');
+    }
+    
+    // 如果选中了标签，获取推荐
+    if (selectedTags.length > 0) {
+        await getRecommendations();
+    } else {
+        // 没有选中标签，隐藏推荐区域
+        document.getElementById('recommendations-container').style.display = 'none';
+    }
+}
+
+// 获取推荐模板
+async function getRecommendations() {
+    if (selectedTags.length === 0) return;
+    
+    const world = document.getElementById('world-select').value;
+    currentWorldForTags = world;
+    
+    try {
+        const response = await fetch(`${API_BASE}/world/recommend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                preferred_tags: selectedTags,
+                world_id: world,
+                limit: 3
+            })
+        });
+        
+        const data = await response.json();
+        displayRecommendations(data.recommendations);
+        
+    } catch (error) {
+        console.error('获取推荐失败:', error);
+    }
+}
+
+// 显示推荐模板
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendations-container');
+    const listContainer = document.getElementById('recommendations-list');
+    
+    if (!recommendations || recommendations.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    listContainer.innerHTML = '';
+    
+    recommendations.forEach(rec => {
+        const template = rec.template;
+        const item = document.createElement('div');
+        item.className = 'recommendation-item';
+        item.onclick = () => {
+            // 点击推荐模板，填充开场
+            document.getElementById('opening-input').value = template.opening;
+            // 可选：自动选择这个模板
+            if (templateSelect) {
+                // 在模板下拉框中添加或选中
+                const option = document.createElement('option');
+                option.value = template.opening;
+                option.textContent = `${template.name} - ${template.description} (推荐)`;
+                templateSelect.appendChild(option);
+                templateSelect.value = template.opening;
+            }
+        };
+        
+        item.innerHTML = `
+            <div class="recommendation-name">
+                ${template.name}
+                <span class="recommendation-score">匹配度: ${rec.score}</span>
+            </div>
+            <div class="recommendation-desc">${template.description}</div>
+            <div class="recommendation-tags">标签: ${template.tags.join(' · ')}</div>
+        `;
+        listContainer.appendChild(item);
+    });
+}
+
+// 监听世界观变化时，刷新标签推荐
+if (worldSelect) {
+    const originalChange = worldSelect.onchange;
+    worldSelect.addEventListener('change', () => {
+        // 清空选中的标签
+        selectedTags = [];
+        // 重新加载标签（可选，标签是全局的，不需要重新加载）
+        // 清除推荐区域
+        document.getElementById('recommendations-container').style.display = 'none';
+        // 清除标签高亮
+        document.querySelectorAll('.tag').forEach(tag => {
+            tag.classList.remove('selected');
+        });
+    });
+}
+
+// 页面加载时加载标签
+loadTags();
 
 console.log('前端已加载，API地址:', API_BASE);

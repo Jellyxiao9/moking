@@ -19,6 +19,8 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.infrastructure.database import Base
+from app.modules.user.models.user import User 
+from app.modules.user.models.guest_mapping import GuestMapping
 from app.models.story import Story
 from app.models.turn import Turn
 

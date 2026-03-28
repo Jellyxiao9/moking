@@ -5,7 +5,7 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.infrastructure.database import get_db
-from app.models.story import Story, WorldType
+from app.models.story import Story, WorldType, StoryStatus
 
 
 class StoryRepo:
@@ -19,7 +19,8 @@ class StoryRepo:
         story = Story(
             title=title,
             world=WorldType(world),  # 转换为枚举
-            summary=""  # 初始为空，后续可更新
+            summary="",  # 初始为空，后续可更新
+            status="active"
         )
         self.db.add(story)
         self.db.commit()

@@ -38,4 +38,4 @@ class Story(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    turns = relationship("Turn", back_populates="story", cascade="all, delete-orphan")
+    turns = relationship("app.models.turn.Turn", back_populates="story", cascade="all, delete-orphan")

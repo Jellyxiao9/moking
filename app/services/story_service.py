@@ -3,10 +3,40 @@
 """
 
 from uuid import UUID
+import re
 from app.engine.narrator import Narrator
 from app.engine.choice_parser import extract_choices
 from app.repositories.story_repo import StoryRepo
 from app.repositories.turn_repo import TurnRepo
+from app.modules.preference import PreferenceRecorder
+
+
+def extract_tags_from_text(text: str) -> list:
+    """从文本中提取标签（简单关键词匹配）"""
+    # 常见标签关键词
+    tag_keywords = {
+        "调查": ["调查", "查", "找", "线索", "证据"],
+        "战斗": ["战斗", "打", "攻击", "对抗"],
+        "交涉": ["交涉", "谈判", "说服", "劝说"],
+        "探索": ["探索", "查看", "观察", "检查"],
+        "潜行": ["潜行", "偷偷", "悄悄", "隐藏"],
+        "科技": ["科技", "黑客", "网络", "义体"],
+        "魔法": ["魔法", "咒语", "法术", "灵力"],
+        "修仙": ["修仙", "修炼", "灵气", "筑基"],
+        "权谋": ["权谋", "朝堂", "谋略", "算计"],
+        "怪谈": ["怪谈", "传说", "禁忌", "灵异"],
+        "理智": ["理智", "疯狂", "恐惧", "精神"],
+        "生存": ["生存", "物资", "辐射", "废土"],
+    }
+    
+    tags = []
+    text_lower = text.lower()
+    for tag, keywords in tag_keywords.items():
+        for kw in keywords:
+            if kw in text:
+                tags.append(tag)
+                break
+    return tags
 
 
 class StoryService:
@@ -80,6 +110,9 @@ class StoryService:
             choices=choices
         )
 
+        # 6. 记录偏好（开场第一轮，暂时不记录，等后续有用户ID再完善）
+        # 注意：第一轮时 story.user_id 可能为空，等用户系统完善后添加
+
         return {
             "story_id": str(story.id),
             "content": story_content,
@@ -138,6 +171,26 @@ class StoryService:
 
         # 7. 更新故事摘要（用最新剧情的前100字作为摘要）
         self.story_repo.update_summary(story_id, story_content[:100])
+
+        # 8. 记录偏好
+        try:
+            pref_recorder = PreferenceRecorder()
+            
+            # 从用户选择中提取标签
+            tags = extract_tags_from_text(user_choice)
+            
+            # 如果有用户 ID，记录偏好
+            if story.user_id:
+                pref_recorder.record(
+                    user_id=str(story.user_id),
+                    world_id=story.world.value,
+                    story_id=str(story_id),
+                    tags=tags
+                )
+            # 游客模式暂不记录，等游客系统完善后再添加
+                
+        except Exception as e:
+            print(f"记录偏好失败: {e}")
 
         return {
             "content": story_content,

@@ -18,4 +18,4 @@ class Turn(Base):
     preference_tags = Column(JSON, nullable=True, default=list)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    story = relationship("Story", back_populates="turns")
+    story = relationship("app.models.story.Story", back_populates="turns")

@@ -19,6 +19,7 @@ class Narrator:
         world: str,
         scene_description: str,
         history: list = None,
+        preferences: list = None,
         max_tokens: int = 800,
     ) -> str:
         """
@@ -28,6 +29,7 @@ class Narrator:
             world: 世界观名称 (cyberpunk/fantasy/noir)
             scene_description: 当前场景描述（玩家输入或开场白）
             history: 之前的对话历史（可选）
+            preferences: 用户偏好标签列表（可选）
             max_tokens: 最大生成 token 数
 
         Returns:
@@ -36,8 +38,8 @@ class Narrator:
         # 1. 检索相关世界观片段
         context = get_context(world, scene_description)
 
-        # 2. 构建 system prompt
-        system_prompt = self._build_system_prompt(world, context)
+        # 2. 构建 system prompt（传入 preferences）
+        system_prompt = self._build_system_prompt(world, context, preferences)
 
         # 3. 构建用户消息
         user_prompt = self._build_user_prompt(scene_description, history)
@@ -55,7 +57,7 @@ class Narrator:
 
         return response.choices[0].message.content
 
-    def _build_system_prompt(self, world: str, context: str) -> str:
+    def _build_system_prompt(self, world: str, context: str, preferences: list = None) -> str:
         """构建系统提示词（包含世界观）"""
         base_prompt = f"""你是一个专业的互动叙事游戏主持人（DM），正在为玩家主持一场以「{world}」世界观为背景的文字冒险游戏。
 

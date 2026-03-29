@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 墨境</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(30,30,50,0.6);
+            border: none;
+            border-radius: 10px;
+            color: #ccc;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .form-panel {
+            display: none;
+        }
+        .form-panel.active {
+            display: block;
+        }
+        .guest-btn {
+            margin-top: 20px;
+            background: rgba(100,100,150,0.3);
+            color: #ccc;
+        }
+        .guest-btn:hover {
+            background: rgba(100,100,150,0.5);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(20,20,40,0.8);
+            border: 1px solid #444;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container login-container">
+        <div class="card">
+            <h2 style="text-align: center;">墨境 Storycraft</h2>
+            <p style="text-align: center; color: #888;">登录后保存你的冒险旅程</p>
+            
+            <div class="tab-buttons">
+                <button id="login-tab" class="tab-btn active">登录</button>
+                <button id="register-tab" class="tab-btn">注册</button>
+            </div>
+            
+            <!-- 登录面板 -->
+            <div id="login-panel" class="form-panel active">
+                <div class="form-group">
+                    <label>手机号</label>
+                    <input type="tel" id="login-phone" placeholder="请输入手机号">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码">
+                </div>
+                <button id="login-btn" class="btn-primary">登录</button>
+            </div>
+            
+            <!-- 注册面板 -->
+            <div id="register-panel" class="form-panel">
+                <div class="form-group">
+                    <label>手机号</label>
+                    <input type="tel" id="register-phone" placeholder="请输入手机号">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="register-password" placeholder="请输入密码">
+                </div>
+                <div class="form-group">
+                    <label>昵称</label>
+                    <input type="text" id="register-nickname" placeholder="请输入昵称" value="旅行者">
+                </div>
+                <button id="register-btn" class="btn-primary">注册</button>
+            </div>
+            
+            <button id="guest-btn" class="btn-secondary guest-btn">游客体验</button>
+            <div id="message" style="margin-top: 15px; text-align: center; color: #ffaa44;"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        function showMessage(msg, isError = false) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = msg;
+            msgDiv.style.color = isError ? '#ff6666' : '#88ff88';
+            setTimeout(() => {
+                msgDiv.textContent = '';
+            }, 3000);
+        }
+        
+        function saveUser(userData) {
+            localStorage.setItem('user', JSON.stringify(userData));
+        }
+        
+        function redirectToGame() {
+            window.location.href = 'index.html';
+        }
+        
+        document.getElementById('login-tab').addEventListener('click', () => {
+            document.getElementById('login-tab').classList.add('active');
+            document.getElementById('register-tab').classList.remove('active');
+            document.getElementById('login-panel').classList.add('active');
+            document.getElementById('register-panel').classList.remove('active');
+        });
+        
+        document.getElementById('register-tab').addEventListener('click', () => {
+            document.getElementById('register-tab').classList.add('active');
+            document.getElementById('login-tab').classList.remove('active');
+            document.getElementById('register-panel').classList.add('active');
+            document.getElementById('login-panel').classList.remove('active');
+        });
+        
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const phone = document.getElementById('login-phone').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!phone || !password) {
+                showMessage('请填写手机号和密码', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('登录失败');
+                }
+                
+                const data = await response.json();
+                saveUser(data);
+                showMessage('登录成功！正在进入...');
+                setTimeout(redirectToGame, 1000);
+                
+            } catch (error) {
+                showMessage('登录失败：手机号或密码错误', true);
+            }
+        });
+        
+        document.getElementById('register-btn').addEventListener('click', async () => {
+            const phone = document.getElementById('register-phone').value;
+            const password = document.getElementById('register-password').value;
+            const nickname = document.getElementById('register-nickname').value || '旅行者';
+            
+            if (!phone || !password) {
+                showMessage('请填写手机号和密码', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/user/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password, nickname })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('注册失败');
+                }
+                
+                const data = await response.json();
+                saveUser(data);
+                showMessage('注册成功！正在进入...');
+                setTimeout(redirectToGame, 1000);
+                
+            } catch (error) {
+                showMessage('注册失败：手机号可能已存在', true);
+            }
+        });
+        
+        document.getElementById('guest-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/user/guest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                saveUser(data);
+                showMessage('游客模式，注册后可保存数据');
+                setTimeout(redirectToGame, 1000);
+                
+            } catch (error) {
+                showMessage('游客登录失败', true);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from app.api import story, world
 from fastapi.staticfiles import StaticFiles
+from app.modules.user.api import router as user_router
 
 app = FastAPI(
     title="墨境 Storycraft",
@@ -41,3 +42,4 @@ async def health():
 # 注册路由
 app.include_router(world.router)
 app.include_router(story.router)
+app.include_router(user_router)

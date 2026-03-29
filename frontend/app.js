@@ -9,6 +9,52 @@ let currentTurn = 1;
 let selectedTags = [];
 let currentWorldForTags = 'noir';
 
+// ==================== 用户状态管理（新增） ====================
+let currentUser = null;
+
+// 加载用户信息
+function loadUser() {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        currentUser = JSON.parse(userStr);
+        updateUserUI();
+    } else {
+        // 显示游客模式
+        const guestDiv = document.getElementById('user-guest');
+        const loggedinDiv = document.getElementById('user-loggedin');
+        if (guestDiv) guestDiv.style.display = 'flex';
+        if (loggedinDiv) loggedinDiv.style.display = 'none';
+    }
+}
+
+// 更新用户界面
+function updateUserUI() {
+    if (currentUser) {
+        const guestDiv = document.getElementById('user-guest');
+        const loggedinDiv = document.getElementById('user-loggedin');
+        if (guestDiv) guestDiv.style.display = 'none';
+        if (loggedinDiv) loggedinDiv.style.display = 'flex';
+        
+        const nicknameSpan = document.getElementById('user-nickname');
+        if (nicknameSpan) nicknameSpan.textContent = currentUser.nickname;
+        
+        // 如果有头像则显示
+        const avatarImg = document.getElementById('user-avatar');
+        if (avatarImg && currentUser.avatar) {
+            avatarImg.src = currentUser.avatar;
+        }
+    }
+}
+
+// 退出登录
+function logout() {
+    localStorage.removeItem('user');
+    currentUser = null;
+    window.location.reload();
+}
+
+// ==================== 原有代码开始 ====================
+
 // DOM 元素
 const setupScreen = document.getElementById('setup-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -514,6 +560,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiGenerateBtn = document.getElementById('ai-generate-btn');
     if (aiGenerateBtn) {
         aiGenerateBtn.addEventListener('click', generateTemplateByAI);
+    }
+    
+    // 加载用户信息
+    loadUser();
+    
+    // 绑定退出按钮
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+    
+    // 绑定登录按钮
+    const loginHeaderBtn = document.getElementById('login-btn-header');
+    if (loginHeaderBtn) {
+        loginHeaderBtn.addEventListener('click', () => {
+            window.location.href = 'login.html';
+        });
     }
 });
 

@@ -96,10 +96,14 @@ async def get_history(story_id: str):
 
 
 @router.get("/history/all")
-async def get_all_stories():
-    """获取所有故事列表"""
+async def get_all_stories(user_id: str = None):
+    """获取故事列表（需要传入 user_id）"""
     try:
-        stories = service.story_repo.get_all()
+        if not user_id:
+            raise HTTPException(status_code=400, detail="需要提供 user_id")
+        
+        from uuid import UUID
+        stories = service.story_repo.get_by_user(UUID(user_id))
         return {
             "stories": [
                 {

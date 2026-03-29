@@ -31,6 +31,12 @@ class StoryRepo:
         """根据ID获取故事"""
         return self.db.query(Story).filter(Story.id == story_id).first()
 
+    def get_by_user(self, user_id: UUID) -> list[Story]:
+        """获取指定用户的所有故事（按更新时间倒序）"""
+        return self.db.query(Story).filter(
+            Story.user_id == user_id
+        ).order_by(Story.updated_at.desc()).all()
+
     def get_all(self, limit: int = 10) -> list[Story]:
         """获取所有故事（按更新时间倒序）"""
         return self.db.query(Story).order_by(

@@ -52,21 +52,25 @@ class UserService:
         return True
     
     def get_user_stories(self, user_id: UUID) -> list:
-        stories = self.db.query(Story).filter(
-            Story.user_id == user_id
-        ).order_by(Story.created_at.desc()).all()
-        
-        return [
-            {
-                "id": str(s.id),
-                "title": s.title,
-                "world": s.world.value,
-                "summary": s.summary or "继续你的冒险...",
-                "created_at": s.created_at.isoformat(),
-                "status": s.status.value if s.status else "active"
-            }
-            for s in stories
-        ]
+        try:
+            stories = self.db.query(Story).filter(
+                Story.user_id == user_id
+            ).order_by(Story.created_at.desc()).all()
+            
+            return [
+                {
+                    "id": str(s.id),
+                    "title": s.title,
+                    "world": s.world.value,
+                    "summary": s.summary or "继续你的冒险...",
+                    "created_at": s.created_at.isoformat(),
+                    "status": s.status.value if s.status else "active"
+                }
+                for s in stories
+            ]
+        except Exception as e:
+            print(f"get_user_stories 错误: {e}")
+            return []  # 出错时返回空列表   
     
     def close(self):
         self.db.close()

@@ -78,8 +78,15 @@
         const API_BASE = 'http://localhost:8000';
         
         async function loadHistory() {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const user = JSON.parse(userStr);
+            
             try {
-                const response = await fetch(`${API_BASE}/story/history/all`);
+                const response = await fetch(`${API_BASE}/story/history/all?user_id=${user.user_id}`);
                 if (!response.ok) {
                     throw new Error('加载失败');
                 }
@@ -88,7 +95,7 @@
             } catch (error) {
                 console.error('加载历史失败:', error);
                 document.getElementById('history-list').innerHTML = 
-                    '<div class="empty-state">暂无故事记录，开始你的第一个冒险吧！</div>';
+                    '<div class="empty-state">加载失败，请刷新重试</div>';
             }
         }
         

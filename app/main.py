@@ -8,6 +8,7 @@ import os
 from app.api import story, world
 from fastapi.staticfiles import StaticFiles
 from app.modules.user.api import router as user_router
+from app.modules.social.api import router as social_router
 
 app = FastAPI(
     title="墨境 Storycraft",
@@ -43,3 +44,4 @@ async def health():
 app.include_router(world.router)
 app.include_router(story.router)
 app.include_router(user_router)
+app.include_router(social_router)

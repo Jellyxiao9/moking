@@ -551,7 +551,7 @@
             }
             
             container.innerHTML = stories.map(story => `
-                <div class="story-card" onclick="window.location.href='story_detail.html?id=${story.id}'">
+                <div class="story-card">
                     <div class="story-title">
                         ${escapeHtml(story.title)}
                         <span class="story-badge">${story.status === 'active' ? '进行中' : '已完结'}</span>
@@ -561,8 +561,55 @@
                         <span>📅 ${new Date(story.created_at).toLocaleDateString()}</span>
                     </div>
                     <div class="story-summary">${escapeHtml(story.summary)}</div>
+                    <div style="margin-top: 12px; display: flex; gap: 10px;">
+                        <button onclick="continueStory('${story.id}')" style="background: rgba(102,126,234,0.2); border: 1px solid #667eea; padding: 6px 16px; border-radius: 40px; color: #fff; cursor: pointer;">▶ 继续冒险</button>
+                        <button onclick="shareStory('${story.id}')" style="background: rgba(102,126,234,0.2); border: 1px solid #667eea; padding: 6px 16px; border-radius: 40px; color: #fff; cursor: pointer;">📤 分享结局</button>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        // 继续游戏
+        function continueStory(storyId) {
+            window.location.href = `index.html?continue=${storyId}`;
+        }
+
+        // 分享故事
+        async function shareStory(storyId) {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                alert('请先登录');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            try {
+                const response = await fetch(`${API_BASE}/social/share`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        story_id: storyId,
+                        user_id: user.user_id,
+                        share_type: 'ending'
+                    })
+                });
+                
+                if (!response.ok) throw new Error('分享失败');
+                
+                const data = await response.json();
+                
+                // 复制分享链接到剪贴板
+                const shareUrl = `${window.location.origin}/share/${data.share_id}`;
+                await navigator.clipboard.writeText(shareUrl);
+                
+                alert(`✨ 分享链接已复制！\n${shareUrl}\n\n朋友打开链接就能看到你的故事结局啦！`);
+                
+            } catch (error) {
+                console.error('分享失败:', error);
+                alert('分享失败，请重试');
+            }
         }
         
         function escapeHtml(text) {

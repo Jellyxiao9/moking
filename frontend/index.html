@@ -71,6 +71,15 @@
                     
                     <div id="choices-container" class="choices"></div>
 
+                    <!-- 自定义输入区域 -->
+                    <div class="custom-input-area">
+                        <label style="display: block; margin-bottom: 8px; color: #ccc;">或者输入你的自定义行动：</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="custom-choice-input" placeholder="例如：我想去码头问问那个船夫..." style="flex: 1; padding: 10px; background: rgba(20,20,40,0.8); border: 1px solid #444; border-radius: 10px; color: #fff;">
+                            <button id="submit-custom-choice" class="btn-secondary" style="width: auto; padding: 10px 20px;">行动</button>
+                        </div>
+                    </div>
+
                     <div class="game-controls">
                         <button id="new-game-btn" class="btn-secondary">新游戏</button>
                         <span id="turn-indicator" class="turn-indicator">第 1 轮</span>

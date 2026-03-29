@@ -18,6 +18,29 @@ const turnIndicator = document.getElementById('turn-indicator');
 const loadingOverlay = document.getElementById('loading-overlay');
 const templateSelect = document.getElementById('template-select');
 
+// 自定义输入框相关元素（新增）
+const customChoiceInput = document.getElementById('custom-choice-input');
+const submitCustomChoice = document.getElementById('submit-custom-choice');
+
+// 根据世界观更新自定义输入框的 placeholder（新增）
+function updateCustomInputPlaceholder(world) {
+    const customChoiceInput = document.getElementById('custom-choice-input');
+    if (!customChoiceInput) return;
+    
+    const placeholders = {
+        noir: "例如：跟踪那个神秘人、去码头调查、找线人打听消息...",
+        cyberpunk: "例如：入侵公司数据库、黑市买武器、联系地下黑客...",
+        fantasy: "例如：去酒馆打听消息、寻找魔法师、潜入城堡...",
+        xianxia: "例如：御剑飞行追踪、去坊市买丹药、拜见宗门长老...",
+        strategy: "例如：拜访首辅、调查王府、拉拢朝臣...",
+        urban: "例如：去废弃医院调查、查旧报纸、问守夜人...",
+        cthulhu: "例如：翻阅古籍、去阿卡姆调查、询问老渔民...",
+        wasteland: "例如：搜索废墟、追踪掠夺者、去大集市交易..."
+    };
+    
+    customChoiceInput.placeholder = placeholders[world] || "例如：我想去码头问问那个船夫...";
+}
+
 // 显示加载状态
 function showLoading() {
     loadingOverlay.classList.remove('hidden');
@@ -110,6 +133,9 @@ async function startStory() {
         setupScreen.classList.remove('active');
         gameScreen.classList.add('active');
 
+        // 游戏开始时，根据当前世界观更新 placeholder
+        updateCustomInputPlaceholder(world);
+
         hideLoading();
         await displayStory(data.content, storyContent);
         displayChoices(data.choices);
@@ -154,7 +180,24 @@ async function makeChoice(choice) {
     }
 }
 
-// 重置游戏
+// 处理自定义选择（新增）
+async function makeCustomChoice() {
+    if (!customChoiceInput) return;
+    
+    const customInput = customChoiceInput.value.trim();
+    if (!customInput) {
+        alert('请输入你的行动');
+        return;
+    }
+    
+    // 清空输入框
+    customChoiceInput.value = '';
+    
+    // 调用相同的选择逻辑
+    await makeChoice(customInput);
+}
+
+// 重置游戏（修改：清空自定义输入框）
 function resetGame() {
     currentStoryId = null;
     currentTurn = 1;
@@ -163,16 +206,33 @@ function resetGame() {
     document.getElementById('opening-input').value = '';
     storyContent.innerHTML = '<p class="placeholder">等待故事开始...</p>';
     choicesContainer.innerHTML = '';
+    if (customChoiceInput) customChoiceInput.value = '';
 }
 
 // 绑定事件
 document.getElementById('start-btn').addEventListener('click', startStory);
 document.getElementById('new-game-btn').addEventListener('click', resetGame);
 
-// 监听世界观变化
+// 绑定自定义选择按钮（新增）
+if (submitCustomChoice) {
+    submitCustomChoice.addEventListener('click', makeCustomChoice);
+}
+
+// 支持回车键提交（新增）
+if (customChoiceInput) {
+    customChoiceInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            makeCustomChoice();
+        }
+    });
+}
+
+// 监听世界观变化（修改：添加更新 placeholder）
 const worldSelect = document.getElementById('world-select');
 if (worldSelect) {
     worldSelect.addEventListener('change', (e) => {
+        // 更新自定义输入框 placeholder（新增）
+        updateCustomInputPlaceholder(e.target.value);
         // 清空选中的标签
         selectedTags = [];
         // 清空标签高亮
@@ -201,6 +261,8 @@ if (templateSelect) {
 // 页面加载时加载默认模板
 const initialWorld = document.getElementById('world-select').value;
 loadTemplates(initialWorld);
+// 设置初始 placeholder（新增）
+updateCustomInputPlaceholder(initialWorld);
 
 // 加载标签（只加载当前世界观的标签）
 async function loadTags() {
@@ -334,22 +396,6 @@ function displayRecommendations(recommendations) {
             <div class="recommendation-tags">标签: ${template.tags.join(' · ')}</div>
         `;
         listContainer.appendChild(item);
-    });
-}
-
-// 监听世界观变化时，刷新标签推荐
-if (worldSelect) {
-    const originalChange = worldSelect.onchange;
-    worldSelect.addEventListener('change', () => {
-        // 清空选中的标签
-        selectedTags = [];
-        // 重新加载标签（可选，标签是全局的，不需要重新加载）
-        // 清除推荐区域
-        document.getElementById('recommendations-container').style.display = 'none';
-        // 清除标签高亮
-        document.querySelectorAll('.tag').forEach(tag => {
-            tag.classList.remove('selected');
-        });
     });
 }
 
